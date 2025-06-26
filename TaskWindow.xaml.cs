@@ -8,7 +8,7 @@ namespace ProgPart3
     {
         private TaskManager taskManager;
 
-        public TaskWindow(TaskManager manager)
+        public TaskWindow(TaskManager manager, ActivityLogManager activityLogManager)
         {
             InitializeComponent();
             taskManager = manager;

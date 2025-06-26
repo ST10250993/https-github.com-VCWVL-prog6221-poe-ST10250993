@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ProgPart3
 {
@@ -8,6 +9,7 @@ namespace ProgPart3
     {
         private Dictionary<string, List<string>> responses;
         private Dictionary<string, string> sentimentResponses;
+        private Dictionary<string, string[]> keywordSynonyms; // synonym -> canonical keyword map
         private Random random;
 
         private string lastTopicKey = null;   // remembers last topic
@@ -16,6 +18,26 @@ namespace ProgPart3
         public ChatBot()
         {
             random = new Random();
+
+            // Map synonyms and variants to canonical keywords
+            keywordSynonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "password", new[] { "password", "passcode", "login key" } },
+                { "phishing", new[] { "phishing", "scam", "fake email" } },
+                { "safe browsing", new[] { "safe browsing", "secure browsing" } },
+                { "antivirus", new[] { "antivirus", "anti-virus", "virus protection" } },
+                { "firewall", new[] { "firewall", "fire wall" } },
+                { "vpn", new[] { "vpn", "virtual private network" } },
+                { "2fa", new[] { "2fa", "two-factor authentication", "two factor authentication" } },
+                { "social media", new[] { "social media", "social networking" } },
+                { "malware", new[] { "malware", "malicious software" } },
+                { "ransomware", new[] { "ransomware" } },
+                { "updates", new[] { "updates", "software update", "patch" } },
+                { "public wifi", new[] { "public wifi", "public wireless", "public wifi network" } },
+                { "backups", new[] { "backups", "data backup" } },
+                { "email security", new[] { "email security", "email protection", "secure email" } },
+                { "encryption", new[] { "encryption", "encrypt" } }
+            };
 
             sentimentResponses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -112,7 +134,7 @@ namespace ProgPart3
             if (string.IsNullOrWhiteSpace(input))
                 return "Please enter a valid question or topic.";
 
-            string userInput = input.ToLower().Trim();
+            string userInput = Preprocess(input);
 
             // Phrases that mean "tell me more"
             var moreRequests = new HashSet<string> { "more", "tell me more", "another", "more info", "more information" };
@@ -135,7 +157,7 @@ namespace ProgPart3
             // Check for hardcoded sentiment responses
             foreach (var sentiment in sentimentResponses)
             {
-                if (userInput.Contains(sentiment.Key.ToLower()))
+                if (ContainsWholeWord(userInput, sentiment.Key.ToLower()))
                 {
                     lastTopicKey = null;
                     lastResponseIndex = -1;
@@ -143,29 +165,36 @@ namespace ProgPart3
                 }
             }
 
-            // Topic match
-            foreach (var pair in responses)
+            // Topic match using synonyms and whole word/phrase matching
+            foreach (var pair in keywordSynonyms)
             {
-                if (userInput.Contains(pair.Key.ToLower()))
+                string canonicalKey = pair.Key;
+                string[] synonyms = pair.Value;
+
+                foreach (string synonym in synonyms)
                 {
-                    var replyOptions = pair.Value;
-                    int index;
-
-                    if (replyOptions.Count == 1)
+                    if (ContainsWholeWord(userInput, synonym.ToLower()))
                     {
-                        index = 0;
-                    }
-                    else
-                    {
-                        do
+                        if (responses.ContainsKey(canonicalKey))
                         {
-                            index = random.Next(replyOptions.Count);
-                        } while (index == lastResponseIndex);
+                            var replyOptions = responses[canonicalKey];
+                            int index;
+                            if (replyOptions.Count == 1)
+                            {
+                                index = 0;
+                            }
+                            else
+                            {
+                                do
+                                {
+                                    index = random.Next(replyOptions.Count);
+                                } while (index == lastResponseIndex);
+                            }
+                            lastTopicKey = canonicalKey;
+                            lastResponseIndex = index;
+                            return replyOptions[index];
+                        }
                     }
-
-                    lastTopicKey = pair.Key;
-                    lastResponseIndex = index;
-                    return replyOptions[index];
                 }
             }
 
@@ -180,6 +209,25 @@ namespace ProgPart3
             lastTopicKey = null;
             lastResponseIndex = -1;
             return "I'm sorry, I didn't quite understand that. Could you try asking in a different way or about another cybersecurity topic?";
+        }
+
+        private string Preprocess(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return "";
+
+            // Lowercase and remove punctuation (keep spaces)
+            string lower = input.ToLowerInvariant();
+            string cleaned = Regex.Replace(lower, @"[^\w\s]", " ");
+            // Normalize multiple spaces to one
+            cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
+            return cleaned;
+        }
+
+        // Checks if the text contains the whole word/phrase (with word boundaries)
+        private bool ContainsWholeWord(string text, string word)
+        {
+            // \b works for word boundaries
+            return Regex.IsMatch(text, $@"\b{Regex.Escape(word)}\b", RegexOptions.IgnoreCase);
         }
 
         private string DetectSentiment(string input)

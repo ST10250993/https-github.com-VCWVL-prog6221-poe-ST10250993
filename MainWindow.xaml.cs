@@ -11,8 +11,8 @@ namespace ProgPart3
         private ChatBot bot;
         private SoundPlayer player;
 
-        // Assuming you have a TaskManager instance somewhere to pass to TaskWindow
         private TaskManager taskManager = new TaskManager();
+        private ActivityLogManager activityLogManager = new ActivityLogManager();
 
         public MainWindow()
         {
@@ -22,7 +22,7 @@ namespace ProgPart3
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            // Display ASCII art
+            // ASCII art text
             AsciiArtBlock.Text =
 @"══════════════════════════════════════════════════════════════╗
 ║                    🤖 CYBERSECURITY BOT 🤖                   |
@@ -89,9 +89,15 @@ namespace ProgPart3
             {
                 AppendColoredText($"You: {userInput}\n", Colors.LightBlue);
 
+                // Log user chat input
+                activityLogManager.AddEntry("Chat", $"User said: {userInput}");
+
                 string response = bot.GetResponseAsText(userInput);
 
                 AppendColoredText($"Bot: {response}\n\n", Colors.LightGreen);
+
+                // Log bot response (optional)
+                activityLogManager.AddEntry("Chat", $"Bot replied: {response}");
 
                 InputBox.Text = "";
                 ResponseBlock.ScrollToEnd();
@@ -117,16 +123,27 @@ namespace ProgPart3
             {
                 Owner = this
             };
+            activityLogManager.AddEntry("Quiz", "User opened the Quiz window.");
             quizWindow.ShowDialog();
         }
 
         private void OpenTasks_Click(object sender, RoutedEventArgs e)
         {
-            var taskWindow = new TaskWindow(taskManager)
+            var taskWindow = new TaskWindow(taskManager, activityLogManager)
             {
                 Owner = this
             };
+            activityLogManager.AddEntry("Task", "User opened the Task window.");
             taskWindow.ShowDialog();
+        }
+
+        private void OpenActivityLog_Click(object sender, RoutedEventArgs e)
+        {
+            var activityLogWindow = new ActivityLogWindow(activityLogManager)
+            {
+                Owner = this
+            };
+            activityLogWindow.ShowDialog();
         }
     }
 }

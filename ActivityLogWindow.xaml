@@ -1,0 +1,15 @@
+﻿<Window x:Class="ProgPart3.ActivityLogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Activity Log" Height="450" Width="600" Background="Black" Foreground="LightGreen" MinHeight="450" MinWidth="600">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ListBox x:Name="LogListBox" FontFamily="Consolas" FontSize="14" Background="Black" Foreground="LightGreen" />
+
+        <Button x:Name="LoadMoreButton" Content="Load More" Grid.Row="1" Margin="0,10,0,0" Width="100" Height="30" HorizontalAlignment="Center" Click="LoadMoreButton_Click" />
+    </Grid>
+</Window>
